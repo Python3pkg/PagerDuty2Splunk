@@ -4,8 +4,8 @@ from datetime import timedelta
 import time
 import ssl
 import json
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import sys
 
 
@@ -25,15 +25,15 @@ def retrieve_pagerduty_logs (day_to_retrieve, pagination_offset, pagerduty_token
         "offset": pagination_offset,
         "is_overview": "false"
     }
-    url = "https://api.pagerduty.com/log_entries?%s" % (urllib.urlencode(data))
-    req = urllib2.Request(url, headers=headers)
+    url = "https://api.pagerduty.com/log_entries?%s" % (urllib.parse.urlencode(data))
+    req = urllib.request.Request(url, headers=headers)
     try:
-        response = urllib2.urlopen(req)
-    except urllib2.HTTPError, e:
+        response = urllib.request.urlopen(req)
+    except urllib.error.HTTPError as e:
         logging.error("Error sending getting data from Pagerduty: {0} {1}".format(e.code, e.reason))
         raise
 
-    the_page =  unicode(response.read(),errors='replace')
+    the_page =  str(response.read(),errors='replace')
     page_json = json.loads(the_page)
 
     logging.debug(json.dumps(page_json))
@@ -76,19 +76,19 @@ def push_data_to_splunk(data, splunk_instance_id, splunk_token):
         'Content-type': 'application/json'
     }
     url = "https://input-" + splunk_instance_id + ".cloud.splunk.com:8088/services/collector/event"
-    req = urllib2.Request(url, data, headers=headers)
+    req = urllib.request.Request(url, data, headers=headers)
     try:
         if python_version_check([2,7,9]):
             ssl_context = ssl._create_unverified_context()
-            response = urllib2.urlopen(req,context = ssl_context)
+            response = urllib.request.urlopen(req,context = ssl_context)
         else:
             logging.warning("You a using a version of Python older than 2.7.9, if you are on a Splunk trial subscription you will experience an SSL error unless you upgrade")
-            response = urllib2.urlopen(req)
+            response = urllib.request.urlopen(req)
 
-    except urllib2.HTTPError, e:
+    except urllib.error.HTTPError as e:
         logging.error("Error sending data to Splunk: {0} {1}".format(e.code, e.reason))
         raise
-    the_page =  unicode(response.read(),errors='replace')
+    the_page =  str(response.read(),errors='replace')
     page_json = json.loads(the_page)
 
     logging.debug(json.dumps(page_json))
